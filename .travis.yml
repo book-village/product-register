@@ -3,10 +3,20 @@ sudo: required
 services: docker
 
 before_install: 
-  - docker login -u hawkdaily -p 867b8575-5a34-4a07-b120-623902898692
+  # - docker login -u hawkdaily -p 867b8575-5a34-4a07-b120-623902898692
+  - docker login -u "$HEROKU_USERNAME" -p "$HEROKU_API_KEY" registry.heroku.com
   - docker-compose up --build -d
 
 script:
   - docker-compose exec --env 'RAILS_ENV=test' web rails db:create
   - docker-compose exec --env 'RAILS_ENV=test' web rails db:migrate
   - docker-compose exec --env 'RAILS_ENV=test' web rails test
+
+deploy:
+  provider: script
+  script:
+    docker build -t register.heroku.com/$HEROKU_APP_NAME/web -f Dockerfile.prod .;
+    docker push register.heroku.com/$HEROKU_APP_NAME/web;
+    heroku run --app $HEROKU_APP_NAME rails db:migrate;
+  on:
+    branch: master
